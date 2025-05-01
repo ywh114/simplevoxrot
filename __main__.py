@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 from util import voxel, simulate
 
+IPYNB = False
+
 if __name__ == '__main__':
     # Initialize voxel space
     extent = 16
@@ -34,63 +36,24 @@ if __name__ == '__main__':
 
     f = anchor | book | cross | tee
 
-    # Get inertia properties
-    I_p, R0 = f.principal_axes
-    x_c, y_c, z_c = com = f.center_of_mass
-
-    # Set up plot centered on COM
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlim((x_c - extent, x_c + extent))
-    ax.set_ylim((y_c - extent, y_c + extent))
-    ax.set_zlim((z_c - extent, z_c + extent))
-    ax.set_box_aspect([1, 1, 1])
-    ax.voxels(f.filled, facecolors=f.facecolors, edgecolor='k')
-    plt.axis('off')
-
     # Initial conditions
     T = 10.0
     dt = 0.01
-    steps = int(T / dt)
-    w_p0 = np.array((20, 0, 5))
-    q0 = simulate.mat2q(R0)
+    w0 = np.array((20, 0, 5))
 
-    def gamma(t: float, dt: float, ws: np.ndarray, I: np.ndarray) -> np.ndarray:
+    def gamma(
+        t: float,
+        dt: float,
+        ws: np.ndarray,
+        I: np.ndarray,  # noqa: E741
+    ) -> np.ndarray:
         return np.zeros(3)
 
-    ts = np.zeros(steps)
-    ws_p = np.zeros(shape=(steps, 3))
-    qs_l = np.zeros(shape=(steps, 4))
-    aers_l = np.zeros(shape=(steps, 3))
-    ws_p[0] = w_p0
-    qs_l[0] = q0
-    aers_l[0] = np.zeros(3)
-    for i in range(1, steps):
-        ts[i] = i * dt
-        ws_p[i], qs_l[i] = simulate.principal_step_rk4(
-            ts[i], dt, ws_p[i - 1], qs_l[i - 1], I_p, gamma
-        )
-
-        elev, azim, roll = aers_l[i] = np.degrees(simulate.q2aer(qs_l[i]))
-        print(
-            f'Time: {ts[i]:.2f}s | '
-            f'Elevation: {elev:.2f}° | '
-            f'Azimuth: {azim:.2f}° | '
-            f'Roll: {roll:.2f}° | '
-        )
-
-        ax.view_init(-azim, -elev, -roll)
-        plt.title(
-            f'Elevation: {elev:.2f}°, Azimuth: {azim:.2f}°, Roll: {roll:.2f}°'
-        )
-
-        plt.draw()
-        plt.pause(0.001)
+    ts, ws_p, aers_l, qs_l, ani = simulate.simulate(
+        f, w0, T, dt, gamma, True, IPYNB
+    )
 
     plt.close()
-
-    print(ts.size)
-    print(ws_p.size)
 
     ws_x, ws_y, ws_z = ws_p.T
     azim, elev, roll = aers_l.T

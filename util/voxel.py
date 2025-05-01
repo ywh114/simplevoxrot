@@ -3,7 +3,6 @@ import numpy as np
 import operator
 
 from enum import IntEnum
-from typing import Union
 
 
 class VoxelAxes(IntEnum):
@@ -173,7 +172,7 @@ class VoxelSpace:
 
     @staticmethod
     def parallel_axis(
-        vox: 'Voxel', about: tuple, I_c: Union[np.ndarray, None] = None
+        vox: 'Voxel', about: tuple, I_c: np.ndarray | None = None
     ) -> np.ndarray:
         """
         Calculate diagonalized inertia tensor and the Euler angles of principal
