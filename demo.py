@@ -10,12 +10,16 @@ if __name__ == '__main__':
     extent = 14
     vs = voxel.VoxelSpace(extent)
 
-    diamond = voxel.Voxel(vs)
-    diamond.make_cone(4, 8, (8, 8, 8), invert=True, color='lightblue')
-    diamond.make_cone(4, 8, (8, 8, 8), color='lightblue')
-    diamond.make_cylinder(4.2, 2, (8, 8, 8), color='gold')
+    cross = voxel.Voxel(vs)
+    anchor = voxel.Voxel(vs)
 
-    f = diamond
+    cross.make_rect_prism((5, 1, 1), (5, 5, 5), color='red')
+    cross.make_rect_prism((1, 1, 5), (7, 5, 3), color='red')
+    cross.make_rect_prism((1, 5, 1), (7, 5, 5), color='red')
+
+    anchor.make_point((7, 5, 5), rho=1e5, color='gold')
+
+    f = anchor | cross
     x_c, y_c, z_c = f.center_of_mass
 
     # Set up plot centered on COM

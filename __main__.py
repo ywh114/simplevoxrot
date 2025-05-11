@@ -24,26 +24,27 @@ if __name__ == '__main__':
     # book.make_rect_prism((9, 7, 2), (0, 1, 1), rho=0.5, color='white')  # Pages
 
     # Create cross componenets
-    # cross.make_rect_prism((5, 1, 1), (5, 5, 5), color='red')
-    # cross.make_rect_prism((1, 1, 5), (7, 5, 3), color='red')
-    # cross.make_rect_prism((1, 5, 1), (7, 5, 5), color='red')
+    cross.make_rect_prism((5, 1, 1), (5, 5, 5), color='red')
+    cross.make_rect_prism((1, 1, 5), (7, 5, 3), color='red')
+    cross.make_rect_prism((1, 5, 1), (7, 5, 5), color='red')
 
     # Create tee componenets
     # tee.make_rect_prism((1, 1, 5), (7, 5, 3), rho=1, color='gray')
     # tee.make_rect_prism((1, 5, 1), (7, 5, 5), rho=30, color='red')
 
-    diamond.make_cone(4, 8, (8, 8, 8), invert=True, color='lightblue')
-    diamond.make_cone(4, 8, (8, 8, 8), color='lightblue')
-    diamond.make_cylinder(4.2, 2, (8, 8, 8), color='gold')
+    # diamond.make_cone(4, 8, (8, 8, 8), invert=True, color='lightblue')
+    # diamond.make_cone(4, 8, (8, 8, 8), color='lightblue')
+    # diamond.make_cylinder(4.2, 2, (8, 8, 8), color='gold')
 
     # Testing
+    anchor.make_point((7, 5, 5), rho=1e5, color='gold')
     # anchor.make_point((0, 0, 0), rho=0, color='gold')
 
     f = anchor | book | cross | tee | diamond
 
     # Initial conditions
     T = 10.0
-    dt = 0.01
+    dt = 0.01 / 3
     w0 = np.array((20, 0, 5))
 
     def gamma(
@@ -89,8 +90,8 @@ if __name__ == '__main__':
     p_psi, p_phi = simulate.generalized_momenta(f, qs_l)
 
     fig, (ax1, ax2) = plt.subplots(2)
-    ax1.set_title('Generalized Momentum (p_psi)')
-    ax2.set_title('Generalized Momentum (p_phi)')
+    ax1.set_title('Generalized Momentum ($p_\\psi$)')
+    ax2.set_title('Generalized Momentum ($p_\\phi$)')
     ax1.set_ylim(-10, 10)
     ax2.set_ylim(-10, 10)
 

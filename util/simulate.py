@@ -246,10 +246,11 @@ def simulate(
     ax.voxels(f.filled, facecolors=f.facecolors, edgecolor='k')  # type: ignore
     plt.axis('off')
 
-    def update(azim: float, elev: float, roll: float) -> Axes:
+    def update(azim: float, elev: float, roll: float, t: float) -> Axes:
         ax.view_init(-azim, -elev, -roll)  # type: ignore
         ax.set_title(
-            f'Elevation: {elev:.2f}°, Azimuth: {azim:.2f}°, Roll: {roll:.2f}°'
+            f'Elevation: {elev:.2f}°, Azimuth: {azim:.2f}°, Roll: {roll:.2f}°\n'
+            f'Time: {t:.2f}/{T}'
         )
         return ax
 
@@ -263,7 +264,7 @@ def simulate(
         azim, elev, roll = aers_l[i] = np.degrees(q2aer(qs_l[i]))
 
         if animate and not _ipynb:
-            _ = update(azim, elev, roll)
+            _ = update(azim, elev, roll, i * dt)
 
             plt.draw()
             plt.pause(0.001)
