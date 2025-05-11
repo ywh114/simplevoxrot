@@ -201,7 +201,8 @@ class Voxel:
         Variables:
             self.vs: ...
             self.components: A list of boolean arrays of filled locations.
-            self.color: The color of all components.
+            self.component_rhos: A list of float arrays of location densities.
+            self.component_cols: A list of float arrays of location colors.
         """
         self.default_empty = []
         # self.default_color = 'g'
@@ -247,6 +248,7 @@ class Voxel:
     def mass(self) -> float:
         """
         Calculated from `self.densities'.
+
         Returns:
             Total mass.
         """
@@ -689,7 +691,7 @@ class Voxel:
         """
         Side effects:
             Clears `self.components' and resets `self.color'.
-            For working in ipynb.
+            For working in Jupyter notebooks.
         """
         self.components = self.default_empty.copy()
         self.component_rhos = self.default_empty.copy()
