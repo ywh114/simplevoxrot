@@ -1,11 +1,44 @@
 #!/usr/bin/env python3
 import numpy as np
+import itertools
 import matplotlib.pyplot as plt
 
 from typing import Callable
 from util.voxel import Voxel
 from matplotlib.axes import Axes
 from matplotlib.animation import FuncAnimation
+
+
+def q2mat(q: np.ndarray) -> np.ndarray:
+    """
+    https://automaticaddison.com/how-to-convert-a-quaternion-to-a-rotation-matrix/
+    Covert a quaternion into a full three-dimensional rotation matrix.
+
+    Arguments:
+        q: The quaternion.
+    Returns:
+        The rotation matrix.
+    """
+    # Extract the values from Q
+    q0, q1, q2, q3 = q
+
+    # First row of the rotation matrix
+    r00 = 2 * (q0 * q0 + q1 * q1) - 1
+    r01 = 2 * (q1 * q2 - q0 * q3)
+    r02 = 2 * (q1 * q3 + q0 * q2)
+
+    # Second row of the rotation matrix
+    r10 = 2 * (q1 * q2 + q0 * q3)
+    r11 = 2 * (q0 * q0 + q2 * q2) - 1
+    r12 = 2 * (q2 * q3 - q0 * q1)
+
+    # Third row of the rotation matrix
+    r20 = 2 * (q1 * q3 - q0 * q2)
+    r21 = 2 * (q2 * q3 + q0 * q1)
+    r22 = 2 * (q0 * q0 + q3 * q3) - 1
+
+    # 3x3 rotation matrix
+    return np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
 
 
 def mat2q(R: np.ndarray) -> np.ndarray:
@@ -204,6 +237,7 @@ def simulate(
 
     # Set up plot centered on COM
     fig = plt.figure()
+    fig.set_size_inches(8, 4.5, True)
     ax = fig.add_subplot(111, projection='3d')
     ax.set_xlim((x_c - extent, x_c + extent))
     ax.set_ylim((y_c - extent, y_c + extent))
@@ -253,3 +287,80 @@ def simulate(
         )
 
     return ts, ws_p, aers_l, qs_l, ani
+
+
+def angular_momentum(
+    f: Voxel, ws_p: np.ndarray, qs_l: np.ndarray
+) -> np.ndarray:
+    """
+    Compute the angular momentum of a body.
+
+    Arguments:
+        f: The `Voxel` object.
+        ws_p: Angular velocities in the principal frame.
+        qs_l: Quaternions in the lab frame.
+    Returns:
+        An array of the angular momentums.
+    """
+    I_p, _ = f.principal_axes
+    Is = np.array(
+        tuple(
+            # q2mat converts a quaternion (used internally for simulation) to
+            # a rotation matrix.
+            q2mat(q) @ I_p  # Apply each rotation to I_p to get I in lab frame.
+            for q in qs_l
+        )
+    )
+    return np.array(
+        tuple(
+            I @ w  # Compute L = I @ omega at each omega.
+            for I, w in zip(Is, ws_p)  # noqa: E741
+        )
+    )
+
+
+def generalized_momenta(
+    f: Voxel, qs_l: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Compute generalized momenta p_phi and p_psi of an axisymmetric object.
+
+    Arguments:
+        f: The `Voxel` object.
+        qs_l: Quaternions in the lab frame.
+    Returns:
+        An array of generalized momenta.
+    """
+
+    def get_axisymmetric(I_p: np.ndarray) -> tuple[float, float] | None:
+        diag = np.diag(I_p.round(4))
+        au = np.array(tuple(p == q for p, q in itertools.combinations(diag, 2)))
+        if not any(au):
+            return None
+
+        m = au.argmax()
+        return diag[2 - m], diag[1 - m]
+
+    thetas, phis, psis = q2euler(qs_l.T)
+
+    cos_theta = np.cos(thetas)
+    phi_dot = np.gradient(phis)
+    psi_dot = np.gradient(psis)
+
+    I_p, _ = f.principal_axes
+    I_a, I_t = at if (at := get_axisymmetric(I_p)) is not None else (None, None)
+
+    if I_a is None:
+        raise ValueError(I_p, 'is not axisymmetric.')
+
+    omega = psi_dot + cos_theta * phi_dot
+    p_psi = I_a * omega
+    p_phi = I_a * omega * cos_theta + I_t * np.sin(thetas) ** 2 * phi_dot
+
+    # Filter out gimbal lock discontinuities in Euler angles.
+    compare = 50
+    threshold = 0.1
+    p_psi[np.abs(p_psi) > p_psi[compare] + threshold] = p_psi[compare]
+    p_phi[np.abs(p_phi) > p_psi[compare] + threshold] = p_phi[compare]
+
+    return p_psi, p_phi
